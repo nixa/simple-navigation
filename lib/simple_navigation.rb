@@ -11,7 +11,7 @@ require 'forwardable'
 
 # A plugin for generating a simple navigation. See README for resources on usage instructions.
 module SimpleNavigation
-  
+
   mattr_accessor :adapter_class, :adapter, :config_files, :config_file_paths, :default_renderer, :registered_renderers, :root, :environment
 
   # Cache for loaded config files
@@ -19,17 +19,18 @@ module SimpleNavigation
 
   # Allows for multiple config_file_paths. Needed if a plugin itself uses simple-navigation and therefore has its own config file
   self.config_file_paths = []
-  
+
   # Maps renderer keys to classes. The keys serve as shortcut in the render_navigation calls (:renderer => :list)
   self.registered_renderers = {
     :list         => SimpleNavigation::Renderer::List,
     :links        => SimpleNavigation::Renderer::Links,
-    :breadcrumbs  => SimpleNavigation::Renderer::Breadcrumbs
+    :breadcrumbs  => SimpleNavigation::Renderer::Breadcrumbs,
+    :table        => SimpleNavigation::Renderer::Table
   }
-  
+
   class << self
     extend Forwardable
-    
+
     def_delegators :adapter, :request, :request_uri, :request_path, :context_for_eval, :current_page?
     def_delegators :adapter_class, :register
 
@@ -47,7 +48,7 @@ module SimpleNavigation
       return :sinatra if defined?(Sinatra)
       raise 'simple_navigation currently only works for Rails, Sinatra and Padrino apps'
     end
-    
+
     # Loads the adapter for the current framework
     def load_adapter
       self.adapter_class = case framework
@@ -64,7 +65,7 @@ module SimpleNavigation
     def init_adapter_from(context)
       self.adapter = self.adapter_class.new(context)
     end
-  
+
     def default_config_file_path
       File.join(SimpleNavigation.root, 'config')
     end
@@ -83,9 +84,9 @@ module SimpleNavigation
     # Returns the name of the config file for the given navigation_context
     def config_file_name(navigation_context = :default)
       prefix = navigation_context == :default ? '' : "#{navigation_context.to_s.underscore}_"
-      "#{prefix}navigation.rb"      
+      "#{prefix}navigation.rb"
     end
-    
+
     # Resets the list of config_file_paths to the specified path
     def config_file_path=(path)
       self.config_file_paths = [path]
@@ -93,7 +94,7 @@ module SimpleNavigation
 
     # Reads the config_file for the specified navigation_context and stores it for later evaluation.
     def load_config(navigation_context = :default)
-      raise "Config file '#{config_file_name(navigation_context)}' not found in path(s) #{config_file_paths.join(', ')}!" unless config_file?(navigation_context)      
+      raise "Config file '#{config_file_name(navigation_context)}' not found in path(s) #{config_file_paths.join(', ')}!" unless config_file?(navigation_context)
       if self.environment == 'production'
         self.config_files[navigation_context] ||= IO.read(config_file(navigation_context))
       else
@@ -129,7 +130,7 @@ module SimpleNavigation
         raise ArgumentError, "Invalid navigation level: #{level}"
       end
     end
-        
+
     # Registers a renderer.
     #
     # === Example
@@ -142,7 +143,7 @@ module SimpleNavigation
     #   render_navigation(:renderer => :my_renderer)
     def register_renderer(renderer_hash)
       self.registered_renderers.merge!(renderer_hash)
-    end    
+    end
 
   end
 
